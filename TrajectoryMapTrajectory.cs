@@ -70,6 +70,11 @@ public class Orientation {
 	public double PlanetRadius;
 
 
+
+	public override string ToString() {
+		return string.Format("|| Lat:{0:0.0000} | Lon:{1:0.0000}",Latitude,Longitude);
+	}
+
 	public static double DistanceBetween(Orientation location1, Orientation location2) {
 		double R = location1.PlanetRadius;
 		if (R <= 0) {

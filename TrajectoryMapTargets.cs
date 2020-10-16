@@ -14,9 +14,11 @@ using Newtonsoft.Json;
 
 
 public static class Const {
-	public const string filename    = "/tmp/w/elite-trajectory/Assets/Data_race5_hyldeptu/Osashes.Tracking.json";
-	public const string filenameOut = "/tmp/w/elite-trajectory/Assets/Data_race5_hyldeptu/Osashes.TT.json";
+	public const string filename    = "/tmp/w/elite-trajectory/Assets/Data_Ninsun/ninsun-train00.json";
+	public const string filenameOut = "/tmp/w/elite-trajectory/Assets/Data_Ninsun/ninsun-train00.TT.json";
 
+//	public const string filename    = "/tmp/w/elite-trajectory/Assets/Data_race5_hyldeptu/Osashes.Tracking.json";
+//	public const string filenameOut = "/tmp/w/elite-trajectory/Assets/Data_race5_hyldeptu/Osashes.TT.json";
 //	public const string filename    = "/tmp/w/elite-trajectory/Assets/Data_race5_hyldeptu/Sgurr.Tracking.json";
 //	public const string filenameOut = "/tmp/w/elite-trajectory/Assets/Data_race5_hyldeptu/Sgurr.TT.json";
 
@@ -83,6 +85,11 @@ public class TrajectoryMapAutopilot {
 	}
 
 	public void display(Orientation newO) {
+		if (newO == null) {
+			Debug.Log("WARN: newO is NULL!");
+			return;
+		};
+
 		Debug.Log(""
 			+ string.Format("     HEAD: {0:0.00}",Orientation.BearingToLocation(newO, autopilotTarget))
 			+ string.Format(" dLat:{0:0.0000}",(autopilotTarget.Latitude-newO.Latitude))
@@ -143,6 +150,8 @@ public class TrajectoryMapAutopilot {
 
 	Random rnd = new Random();
 	public void update(Orientation newO) {
+		if (newO == null) return;
+		Debug.Log("update(): newO:"+newO.ToString());
 
 		List<string> cmds = new List<string>();
 
@@ -375,9 +384,10 @@ public class TrajectoryMapTargets {
 		ServerTrajectoryWithHeight o = JsonConvert.DeserializeObject<ServerTrajectoryWithHeight>(newData);
 
 		Debug.Log("==> o.Head: "+o.Heading+"  o.Lat:"+o.Latitude+" o.Lon:"+o.Longitude+" o.Alt:"+o.Altitude+" o.t:"+o.timestamp);
+
 		if (o.Latitude != Double.MaxValue && o.Longitude != Double.MaxValue && o.Altitude != int.MaxValue && o.Heading != int.MaxValue) {
 			orientation = o;
-//			Debug.Log(" - setting new curr pos!:"+orientation.Latitude+" "+orientation.Longitude+" "+orientation.Altitude+" head:"+o.Heading+" radius:"+o.PlanetRadius);
+			Debug.Log(" - setting new curr pos!:"+orientation.Latitude+" "+orientation.Longitude+" "+orientation.Altitude+" head:"+o.Heading+" radius:"+o.PlanetRadius);
 		} else {
 			if (orientation !=null)
 			Debug.Log(" - keeping old values:"+orientation.Latitude+" "+orientation.Longitude+" "+orientation.Altitude+" head:"+o.Heading+" radius:"+o.PlanetRadius);
@@ -390,7 +400,7 @@ public class TrajectoryMapTargets {
 				timeNextStatusFilePoll = (float) Time.time + timeNextStatusFilePollDelta;
 
 				string newData = statusFileReader.ProcessStatusFileUpdate();
-//				Debug.Log("newData:"+newData);
+				Debug.Log("newData:"+newData);
 				if (!System.String.IsNullOrEmpty(newData)) {
 					updateCurrentState(newData);
 				}
@@ -487,6 +497,7 @@ public class TrajectoryMapTargets {
 				for (int i=0;i<20.0+pointZeroOverride+(round*50.0);i++) { //we absolutely must have zero point dummies reached, increase tries with every round
 					pollStatusFile(); //fills orientation var
 					System.Threading.Thread.Sleep(100);
+					if (orientation == null) { Debug.Log(string.Format("WARN: Orientation is NULL! Check Elite is filling Status.json file... {0} data:{1}",i, target)); i--; continue; }
 					autopilot.update(orientation);
 					System.Threading.Thread.Sleep(100);
 					autopilot.display(orientation);
@@ -582,10 +593,16 @@ public class TrajectoryMapTargets {
 		this.wayToCoverFinal = new List<ServerTrajectoryWithHeight>();
 
 		pointZero = new ServerTrajectoryWithHeight();
-		pointZero.Latitude  = -9.680371; //FLYNN
-		pointZero.Longitude = 98.182648; //FLYNN
-		pointZero.PlanetRadius=1800741.375;
+		pointZero.Latitude  =-59.957718; //NINSUN - Kube-McDowell Enterprise
+		pointZero.Longitude =-62.621376;
+		pointZero.PlanetRadius=2174714.25;
 		pointZero.Altitude=3000; //used @ start
+
+//		pointZero = new ServerTrajectoryWithHeight();
+//		pointZero.Latitude  = -9.680371; //FLYNN
+//		pointZero.Longitude = 98.182648; //FLYNN
+//		pointZero.PlanetRadius=1800741.375;
+//		pointZero.Altitude=3000; //used @ start
 
 		pointExclusion = new ServerTrajectoryWithHeight();
 		pointExclusion.Latitude  = -10.02166; //WEIER
@@ -602,7 +619,7 @@ public class TrajectoryMapTargets {
 
 		int cntAdded=-1;
 		int cntNextDummy=-1;
-		int cntNextDummyPeriod=100;
+		int cntNextDummyPeriod=100; //how much points to measure before return to point zero & create new dummy
 
 		Debug.Log("Points from file:"+stlFromFile.Count);
 
